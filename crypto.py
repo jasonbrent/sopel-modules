@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 from lxml import html
+from coinpaprika import client as Coinpaprika
 
 import copy
 import datetime
@@ -17,6 +18,36 @@ import sopel.module
 PRICE_TPL = u"({name} - ${price_usd}/Ƀ{price_btc} {color}{percent_change_24h:+}%\x0f)"
 SINGLE_PRICE_TPL = u"{name} - ${price_usd}/Ƀ{price_btc} {color}{percent_change_24h:+}%\x0f | Coins: {available_supply} | Cap: ${market_cap_usd} | 24h Vol: ${24h_volume_usd}"
 
+def prep_data(coin):
+    prices = copy.deepcopy(coin)
+    prepped = []
+    for coin in prices:
+        data = {}
+        data['name'] = coin['name']
+        data['symbol'] = coin['symbol']
+        data['id'] = coin['id']
+        data['price_usd'] = float(coin['quotes']['USD']['price'])
+        data['price_btc'] = float(coin['quotes']['BTC']['price'])
+        data['percent_change_24h'] = coin['quotes']['USD']['percent_change_24h']
+        data['available_supply'] = coin['circulating_supply']
+        data['market_cap_usd'] = float(coin['quotes']['USD']['market_cap'])
+        data['24h_volume_usd'] = float(coin['quotes']['USD']['volume_24h']) * float(coin['quotes']['USD']['price'])
+        #for key in ["price_usd", "24hr_volume_usd", "market_cap_usd", "price_btc", "available_supply"]:
+        #    data[key] = "{:,.8f}".format(data[key]).rstrip("0").rstrip(".")
+        prepped.append(data)
+
+    return prepped
+
+def get_prices():
+    global price_cache
+    now = datetime.datetime.now()
+    if (now - price_cache['time']) > datetime.timedelta(minutes=2):
+        client = Coinpaprika.Client()
+        tickers = client.tickers(quotes="BTC,USD")
+        price_cache['time'] = now
+        price_cache['values'] = tickers
+
+    return prep_data(price_cache["values"])
 
 def retry(times=10):
     def wrap(function):
@@ -91,17 +122,29 @@ price_cache = {
     "values": []
 }
 
-@retry(10)
-def get_prices():
-    global price_cache
-    now = datetime.datetime.now()
-    if (now - price_cache["time"]) > datetime.timedelta(minutes=2):
-        prices = requests.get("https://api.coinmarketcap.com/v1/ticker/", params={"limit": 5000}, timeout=1).json()
-        map(clean_price, prices)
-        price_cache["time"] = now
-        price_cache["values"] = prices
+#@retry(10)
+#def get_prices():
+#    global price_cache
+#    now = datetime.datetime.now()
+#    if (now - price_cache["time"]) > datetime.timedelta(minutes=2):
+#        prices = requests.get("https://api.coinmarketcap.com/v1/ticker/", params={"limit": 5000}, timeout=1).json()
+#        map(clean_price, prices)
+#        price_cache["time"] = now
+#        price_cache["values"] = prices
+#
+#    return price_cache["values"]
 
-    return price_cache["values"]
+#@retry(10)
+#def get_prices():
+#    global price_cache
+#    now = datetime.datetime.now()
+#    if (now - price_cache['time']) > datetime.timedelta(minutes=2):
+#        client = Coinpaprika.Client()
+#        tickers = client.tickers()
+#        print(len(tickers))
+#        price_cache['time'] = now
+#        price_cache['values'] = tickers
+#    return price_cache["values"]
 
 
 def get_color(change):
