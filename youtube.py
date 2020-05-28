@@ -47,7 +47,10 @@ def get_data(video_id, api_key):
 
 # Won't work for videos longer than 24hrs
 def parse_duration(duration):
-    match = DURATION_RE.match(duration).groupdict()
+    try:
+    	match = DURATION_RE.match(duration).groupdict()
+    except AttributeError as e:
+        return "Live!"
 
     duration = []
     for key in "hms":
@@ -69,12 +72,15 @@ def title_lookup(bot, trigger):
         return
 
     yt_data = get_data(trigger.groups(1), key)["items"]
+    yt_data[0]["statistics"]["viewCount"] = -32768 # temp hack for videos that require logging in
     if not yt_data:
         return
 
+    #print("DEBUG: {}".format(yt_data))
     duration = parse_duration(yt_data[0]["contentDetails"]["duration"])
 
     bot.say(TPL.format(
         title=yt_data[0]["snippet"]["title"],
         duration=duration,
         views=long(yt_data[0]["statistics"]["viewCount"])))
+

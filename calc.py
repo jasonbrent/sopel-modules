@@ -5,17 +5,24 @@ import re
 
 import sopel.module
 
+# hax
+import sys
+sys.path.insert(0,'/home/jason/.sopel/modules')
+
+import crypto as c
+#from . import crypto as c
+import finance as f
 
 
-try:
-    import crypto as c
-except:
-    c = None
-
-try:
-    import finance as f
-except:
-    f = None
+#try:
+#    import crypto as c
+#except:
+#    c = None
+#
+#try:
+#    import finance as f
+#except:
+#    f = None
 
 
 # Borrowed from http://stackoverflow.com/questions/26505420/evaluate-math-equations-from-unsafe-user-input-in-python
@@ -116,7 +123,8 @@ def calc(bot, trigger):
     try:
         result = safe_eval(expression)
     except Exception as e:
-        bot.say("Nope.")
+        #bot.say("Nope.")
+        bot.say("Nope. " + str(e))
         return
 
     if (type(result) == float) and result.is_integer():
