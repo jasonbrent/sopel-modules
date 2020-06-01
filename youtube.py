@@ -72,7 +72,10 @@ def title_lookup(bot, trigger):
         return
 
     yt_data = get_data(trigger.groups(1), key)["items"]
-    yt_data[0]["statistics"]["viewCount"] = -32768 # temp hack for videos that require logging in
+    if "viewCount" in yt_data[0]["statistics"]:
+	pass
+    else:
+        yt_data[1]["statistics"]["viewCount"] = -32768 # temp hack for videos that require logging in
     if not yt_data:
         return
 
